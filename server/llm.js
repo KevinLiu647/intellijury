@@ -63,16 +63,10 @@ export async function callLLMJson(systemPrompt, userMessage, options = {}) {
   // 在system prompt里强调JSON输出
   let jsonPrompt = `${systemPrompt}\n\n⚠️ 必须输出严格JSON格式，不要markdown包裹，不要多余文字，以{开头以}结尾。`;
   
-  let text;
-  try {
-    text = await callLLM(jsonPrompt, userMessage, {
-      ...options,
-      temperature: 0.1,
-    });
-  } catch (err) {
-    // LLM调用本身失败（超时/中断等），直接抛
-    throw err;
-  }
+  let text = await callLLM(jsonPrompt, userMessage, {
+    ...options,
+    temperature: 0.1,
+  });
 
   const result = tryParseJSON(text);
   if (result && result.summary !== 'AI未能生成有效评审，请重试') {
@@ -82,15 +76,10 @@ export async function callLLMJson(systemPrompt, userMessage, options = {}) {
   // 解析失败，重试一次带更强硬的指令
   console.warn('⚠️ JSON解析失败，正在重试...');
   jsonPrompt = `${systemPrompt}\n\n🚨 严重警告：你上一条输出不是合法的JSON格式，导致系统崩溃。\n这次必须输出严格JSON格式，不要markdown包裹（不要\`\`\`json），不要多余文字，不要换行内注释。\n以{开头，以}结尾。整个输出必须是一个合法的JSON对象。`;
-  
-  try {
-    text = await callLLM(jsonPrompt, userMessage, {
+  text = await callLLM(jsonPrompt, userMessage, {
       ...options,
       temperature: 0.05, // 更低温度，更确定
     });
-  } catch (err) {
-    throw err;
-  }
 
   return tryParseJSON(text);
 }
